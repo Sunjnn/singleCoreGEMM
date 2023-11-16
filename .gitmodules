@@ -1,0 +1,6 @@
+[submodule "singleCoreGEMM_BMOpenBLAS"]
+	path = singleCoreGEMM_BMOpenBLAS
+	url = git@github.com:Sunjnn/singleCoreGEMM_BMOpenBLAS.git
+[submodule "singleCoreGEMM_BMmkl"]
+	path = singleCoreGEMM_BMmkl
+	url = git@github.com:Sunjnn/singleCoreGEMM_BMmkl.git
