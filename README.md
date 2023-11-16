@@ -2,6 +2,9 @@
 
 [Homework 1](https://sites.google.com/lbl.gov/cs267-spr2022/hw-1) of cs267.
 
+Native GEMM where using three nest loop.
+It execute very slowly.
+
 ## build and run
 
 ### manually
