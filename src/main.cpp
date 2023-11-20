@@ -19,8 +19,15 @@ void initMatrix(T* matrix, size_t m, size_t n) {
     for (int i = 0; i < m * n; ++i) matrix[i] = 1.0;
 }
 
-void GEMM(INTEGER m, INTEGER k, INTEGER n, double alpha, double* A, INTEGER ldA,
-          double* B, INTEGER ldB, double beta, double* C, INTEGER ldC) {
+template<class T>
+inline T min(T a, T b) {
+    if (a < b) return a;
+    return b;
+}
+
+void blockGEMM(INTEGER m, INTEGER k, INTEGER n,
+               double alpha, double* A, INTEGER ldA, double* B, INTEGER ldB,
+               double beta,  double* C, INTEGER ldC) {
     for (size_t i = 0; i < m; ++i) {
         for (size_t j = 0; j < n; ++j) {
             double inner_prod = 0.0;
@@ -28,6 +35,37 @@ void GEMM(INTEGER m, INTEGER k, INTEGER n, double alpha, double* A, INTEGER ldA,
                 inner_prod += A[i + l * ldA] * B[l + j * ldB];
             }
             C[i + j * ldC] = alpha * inner_prod + beta * C[i + j * ldC];
+        }
+    }
+}
+
+void GEMM(INTEGER m, INTEGER k, INTEGER n, double alpha, double* A, INTEGER ldA,
+          double* B, INTEGER ldB, double beta, double* C, INTEGER ldC) {
+    INTEGER block_m = 108;
+    INTEGER block_k = 108;
+    INTEGER block_n = 108;
+
+    INTEGER num_m = (m + block_m - 1) / block_m;
+    INTEGER num_k = (k + block_k - 1) / block_k;
+    INTEGER num_n = (n + block_n - 1) / block_n;
+
+    for (INTEGER block_idm = 0; block_idm < num_m; ++block_idm) {
+        for (INTEGER block_idn = 0; block_idn < num_n; ++block_idn) {
+            double *block_A = A + block_idm * block_m;
+            double *block_B = B + block_idn * block_n * ldB;
+            double *block_C = C + block_idn * block_n * ldC
+                                + block_idm * block_m;
+
+            for (INTEGER block_idk = 0; block_idk < num_k; ++block_idk) {
+                INTEGER cur_m = min(block_m, m - block_m * block_idm);
+                INTEGER cur_k = min(block_k, k - block_k * block_idk);
+                INTEGER cur_n = min(block_n, n - block_n * block_idn);
+                blockGEMM(cur_m, cur_k, cur_n,
+                          alpha, block_A, ldA, block_B, ldB,
+                          beta,  block_C, ldC);
+                block_A += block_k * ldA;
+                block_B += block_k;
+            }
         }
     }
 }
