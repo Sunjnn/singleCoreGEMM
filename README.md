@@ -2,8 +2,8 @@
 
 [Homework 1](https://sites.google.com/lbl.gov/cs267-spr2022/hw-1) of cs267.
 
-Implement GEMM by single level of blocking,
-It reach 2.3% of mkl.
+Implement GEMM by multiple level of blocking,
+but it degrade performance.
 
 ## build and run
 

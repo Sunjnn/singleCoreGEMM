@@ -25,49 +25,81 @@ inline T min(T a, T b) {
     return b;
 }
 
-void blockGEMM(INTEGER m, INTEGER k, INTEGER n,
-               double alpha, double* A, INTEGER ldA, double* B, INTEGER ldB,
-               double beta,  double* C, INTEGER ldC) {
+inline void blockGEMM(INTEGER m, INTEGER k, INTEGER n,
+               double* A, INTEGER ldA, double* B, INTEGER ldB,
+               double* C, INTEGER ldC) {
     for (size_t i = 0; i < m; ++i) {
         for (size_t j = 0; j < n; ++j) {
-            double inner_prod = 0.0;
             for (size_t l = 0; l < k; ++l) {
-                inner_prod += A[i + l * ldA] * B[l + j * ldB];
+                C[i + j * ldC] += A[i + l * ldA] * B[l + j * ldB];
             }
-            C[i + j * ldC] = alpha * inner_prod + beta * C[i + j * ldC];
         }
     }
 }
 
-void GEMM(INTEGER m, INTEGER k, INTEGER n, double alpha, double* A, INTEGER ldA,
-          double* B, INTEGER ldB, double beta, double* C, INTEGER ldC) {
-    INTEGER block_m = 108;
-    INTEGER block_k = 108;
-    INTEGER block_n = 108;
+template<class T>
+void div2Matrix(T* matrix,
+                T*& matrix11, T*& matrix12, T*& matrix21, T*& matrix22,
+                INTEGER m, INTEGER n, INTEGER ld) {
+    INTEGER block_m = m / 2;
+    INTEGER block_n = n / 2;
 
-    INTEGER num_m = (m + block_m - 1) / block_m;
-    INTEGER num_k = (k + block_k - 1) / block_k;
-    INTEGER num_n = (n + block_n - 1) / block_n;
+    matrix11 = matrix;
+    matrix21 = matrix + block_m;
+    matrix12 = matrix + ld * block_n;
+    matrix22 = matrix12 + block_m;
+}
 
-    for (INTEGER block_idm = 0; block_idm < num_m; ++block_idm) {
-        for (INTEGER block_idn = 0; block_idn < num_n; ++block_idn) {
-            double *block_A = A + block_idm * block_m;
-            double *block_B = B + block_idn * block_n * ldB;
-            double *block_C = C + block_idn * block_n * ldC
-                                + block_idm * block_m;
-
-            for (INTEGER block_idk = 0; block_idk < num_k; ++block_idk) {
-                INTEGER cur_m = min(block_m, m - block_m * block_idm);
-                INTEGER cur_k = min(block_k, k - block_k * block_idk);
-                INTEGER cur_n = min(block_n, n - block_n * block_idn);
-                blockGEMM(cur_m, cur_k, cur_n,
-                          alpha, block_A, ldA, block_B, ldB,
-                          beta,  block_C, ldC);
-                block_A += block_k * ldA;
-                block_B += block_k;
-            }
-        }
+void GEMM(INTEGER m, INTEGER k, INTEGER n,
+          double* A, INTEGER ldA, double* B, INTEGER ldB,
+          double* C, INTEGER ldC) {
+    if (m * k + k * n + m * n <= 3072) {
+        blockGEMM(m, k, n, A, ldA, B, ldB, C, ldC);
+        return;
     }
+
+    double *A11, *A12, *A21, *A22;
+    div2Matrix(A, A11, A12, A21, A22, m, k, ldA);
+    double *B11, *B12, *B21, *B22;
+    div2Matrix(B, B11, B12, B21, B22, m, k, ldB);
+    double *C11, *C12, *C21, *C22;
+    div2Matrix(C, C11, C12, C21, C22, m, k, ldC);
+
+    INTEGER block_m = m / 2;
+    INTEGER block_k = k / 2;
+    INTEGER block_n = n / 2;
+
+    GEMM(block_m, block_k, block_n, A11, ldA, B11, ldB, C11, ldC);
+    GEMM(block_m, k - block_k, block_n, A12, ldA, B21, ldB, C11, ldC);
+
+    GEMM(block_m, block_k, n - block_n, A11, ldA, B12, ldB, C12, ldC);
+    GEMM(block_m, k - block_k, n - block_n, A12, ldA, B22, ldB, C12, ldC);
+
+    GEMM(m - block_m, block_k, block_n, A21, ldA, B11, ldB, C21, ldC);
+    GEMM(m - block_m, k - block_k, block_n, A22, ldA, B21, ldB, C21, ldC);
+
+    GEMM(m - block_m, block_k, n - block_n, A21, ldA, B12, ldB, C22, ldC);
+    GEMM(m - block_m, k - block_k, n - block_n, A22, ldA, B22, ldB, C22, ldC);
+}
+
+void GEMA(INTEGER m, INTEGER n,
+          double alpha, double* A, INTEGER ldA,
+          double beta,  double* C, INTEGER ldC) {
+    for (INTEGER i = 0; i < m * n; ++i) {
+        C[i] = alpha * A[i] + beta * C[i];
+    }
+}
+
+void blasDgemm(INTEGER m, INTEGER k, INTEGER n,
+               double alpha, double* A, INTEGER ldA, double* B, INTEGER ldB,
+               double beta,  double* C, INTEGER ldC) {
+    double *AB = new double[m * n];
+    memset(AB, 0, sizeof(double) * m * n);
+
+    GEMM(m, k, n, A, ldA, B, ldB, AB, ldC);
+    GEMA(m, n, alpha, AB, m, beta, C, ldC);
+
+    delete[] AB;
 }
 
 template<class CHAR, class INT>
@@ -100,7 +132,7 @@ int main(int argc, char** argv)
     initMatrix(A, size, size);
     initMatrix(B, size, size);
 
-    GEMM(size, size, size, 1.0, A, size, B, size, 0.0, C, size);
+    blasDgemm(size, size, size, 1.0, A, size, B, size, 0.0, C, size);
 
     delete[] A;
     delete[] B;
