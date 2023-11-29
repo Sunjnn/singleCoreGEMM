@@ -2,8 +2,8 @@
 
 [Homework 1](https://sites.google.com/lbl.gov/cs267-spr2022/hw-1) of cs267.
 
-Implement GEMM by multiple level of blocking,
-but it degrade performance.
+Implement GEMM by multiple level of blocking and decrease size of `AB`,
+it achieves one sixths FLOPS to MKL.
 
 ## build and run
 
