@@ -28,9 +28,9 @@ inline T min(T a, T b) {
 inline void blockGEMM(INTEGER m, INTEGER k, INTEGER n,
                double* A, INTEGER ldA, double* B, INTEGER ldB,
                double* C, INTEGER ldC) {
-    for (size_t i = 0; i < m; ++i) {
-        for (size_t j = 0; j < n; ++j) {
-            for (size_t l = 0; l < k; ++l) {
+    for (size_t j = 0; j < n; ++j) {
+        for (size_t l = 0; l < k; ++l) {
+            for (size_t i = 0; i < m; ++i) {
                 C[i + j * ldC] += A[i + l * ldA] * B[l + j * ldB];
             }
         }
