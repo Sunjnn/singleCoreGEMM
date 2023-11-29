@@ -90,8 +90,10 @@ void GEMM(INTEGER m, INTEGER k, INTEGER n,
 void GEMA(INTEGER m, INTEGER n,
           double alpha, double* A, INTEGER ldA,
           double beta,  double* C, INTEGER ldC) {
-    for (INTEGER i = 0; i < m * n; ++i) {
-        C[i] = alpha * A[i] + beta * C[i];
+    for (INTEGER j = 0; j < n; ++j) {
+        for (INTEGER i = 0; i < m; ++i) {
+            C[i + j * ldC] = alpha * A[i + j * ldA] + beta * C[i + j * ldC];
+        }
     }
 }
 
