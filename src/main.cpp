@@ -25,6 +25,11 @@ inline T min(T a, T b) {
     return b;
 }
 
+template<class T>
+inline T divUP(T a, T b) {
+    return (a + b - 1) / b;
+}
+
 inline void blockGEMM(INTEGER m, INTEGER k, INTEGER n,
                double* A, INTEGER ldA, double* B, INTEGER ldB,
                double* C, INTEGER ldC) {
@@ -41,8 +46,8 @@ template<class T>
 void div2Matrix(T* matrix,
                 T*& matrix11, T*& matrix12, T*& matrix21, T*& matrix22,
                 INTEGER m, INTEGER n, INTEGER ld) {
-    INTEGER block_m = m / 2;
-    INTEGER block_n = n / 2;
+    INTEGER block_m = divUP(m, (INTEGER)2);
+    INTEGER block_n = divUP(n, (INTEGER)2);
 
     matrix11 = matrix;
     matrix21 = matrix + block_m;
@@ -65,9 +70,9 @@ void GEMM(INTEGER m, INTEGER k, INTEGER n,
     double *C11, *C12, *C21, *C22;
     div2Matrix(C, C11, C12, C21, C22, m, k, ldC);
 
-    INTEGER block_m = m / 2;
-    INTEGER block_k = k / 2;
-    INTEGER block_n = n / 2;
+    INTEGER block_m = divUP(m, (INTEGER)2);
+    INTEGER block_k = divUP(k, (INTEGER)2);
+    INTEGER block_n = divUP(n, (INTEGER)2);
 
     GEMM(block_m, block_k, block_n, A11, ldA, B11, ldB, C11, ldC);
     GEMM(block_m, k - block_k, block_n, A12, ldA, B21, ldB, C11, ldC);
