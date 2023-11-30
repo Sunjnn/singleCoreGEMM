@@ -7,6 +7,8 @@
 
 #include <string.h>
 
+#include <immintrin.h>
+
 using std::vector;
 using std::rand;
 using std::cout, std::endl;
@@ -35,10 +37,25 @@ inline T divUP(T a, T b) {
 inline void blockGEMM(INTEGER m, INTEGER k, INTEGER n,
                double* A, INTEGER ldA, double* B, INTEGER ldB,
                double* C, INTEGER ldC) {
+    __m512d ra, rb, rc;
     for (size_t j = 0; j < n; ++j) {
         for (size_t l = 0; l < k; ++l) {
-            for (size_t i = 0; i < m; ++i) {
-                C[i + j * ldC] += A[i + l * ldA] * B[l + j * ldB];
+            rb = _mm512_set1_pd(B[l + j * ldB]);
+            for (size_t i = 0; i < m; i += 8) {
+                if (m - i < 8) {
+                    while (i < m) {
+                        C[i + j * ldC] += A[i + l * ldA] * B[l + j * ldB];
+                        ++i;
+                    }
+                    break;
+                }
+
+                ra = _mm512_loadu_pd(A + i + l * ldA);
+                rc = _mm512_loadu_pd(C + i + j * ldC);
+
+                rc = _mm512_fmadd_pd(ra, rb, rc);
+
+                _mm512_storeu_pd(C + i + j * ldC, rc);
             }
         }
     }

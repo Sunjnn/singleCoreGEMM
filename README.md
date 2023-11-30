@@ -4,6 +4,7 @@
 
 Implement GEMM by multiple level of blocking and decrease size of `AB`,
 it achieves one sixths FLOPS to MKL.
+Using avx to execute fused mul-add instruction.
 
 ## build and run
 
