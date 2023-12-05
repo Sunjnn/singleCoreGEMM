@@ -2,9 +2,14 @@
 
 [Homework 1](https://sites.google.com/lbl.gov/cs267-spr2022/hw-1) of cs267.
 
-Implement GEMM by multiple level of blocking and decrease size of `AB`,
-it achieves one sixths FLOPS to MKL.
-Using avx to execute fused mul-add instruction.
+Implement GEMM by 2 level of blocking.
+First level (function `blasDgemm`) execute matrix multiplication $A \times B$
+which are tiled to size [1024, 1024] and second level (function `GEMM`) execute
+multiplication which are tiled to size [64, 64]. Function `GEMM` repacks input
+matrices. Function `blockGEMM` execute matrix multiplication with size [64, 64].
+Avx512 are used to execute fused mul-add instruction.
+
+This route achieves half performance of MKL.
 
 ## build and run
 
