@@ -70,9 +70,26 @@ void div2Matrix(T* matrix,
 void GEMA(INTEGER m, INTEGER n,
           double alpha, double* A, INTEGER ldA,
           double beta,  double* C, INTEGER ldC) {
+    __m512d ra, rc, ralpha, rbeta;
+    ralpha = _mm512_set1_pd(alpha);
+    rbeta = _mm512_set1_pd(beta);
+
     for (INTEGER j = 0; j < n; ++j) {
-        for (INTEGER i = 0; i < m; ++i) {
-            C[i + j * ldC] = alpha * A[i + j * ldA] + beta * C[i + j * ldC];
+        for (INTEGER i = 0; i < m; i += 8) {
+            if (m - i < 8) {
+                while (i < m) {
+                    C[i + j * ldC] = alpha * A[i + j * ldA]
+                        + beta * C[i + j * ldC];
+                    ++i;
+                }
+            }
+
+            ra = _mm512_loadu_pd(A + i + j * ldA);
+            rc = _mm512_loadu_pd(C + i + j * ldC);
+            ra = _mm512_mul_pd(ra, ralpha);
+            rc = _mm512_mul_pd(rc, rbeta);
+
+            _mm512_storeu_pd(C + i + j * ldC, rc);
         }
     }
 }
