@@ -111,6 +111,11 @@ void GEMM(INTEGER m, INTEGER k, INTEGER n,
 
                 blockGEMM(block_m, block_k, block_n, block_A, BLOCK_SIZE_1, block_B,
                         BLOCK_SIZE_1, block_C, BLOCK_SIZE_1);
+
+                for (INTEGER jj = 0; jj < block_n; ++jj) {
+                    memcpy(offset_C + jj * ldC, block_C + jj * BLOCK_SIZE_1,
+                            block_m);
+                }
             }
         }
     }
